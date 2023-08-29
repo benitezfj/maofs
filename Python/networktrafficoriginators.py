@@ -66,7 +66,7 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
                     mutation=BitflipMutation(),
                     ref_dirs=ref_dirs,
                     eliminate_duplicates=False)
-    elif algorithm_name == "MOEAD":
+    elif algorithm_name == "MOEA/D":
       # MOEAD Evaluation
       algorithm = MOEAD(ref_dirs,
                       n_neighbors=15, 
@@ -74,7 +74,7 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
                       sampling=BinaryRandomSampling(), 
                       crossover=TwoPointCrossover(), 
                       mutation=BitflipMutation())
-    elif algorithm_name == "NSGAIII":
+    elif algorithm_name == "NSGA-III":
       # NSGA-III Evaluation
       algorithm = NSGA3(pop_size=120,
                           sampling=BinaryRandomSampling(),
@@ -83,7 +83,7 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
                           mutation=BitflipMutation(),
                           ref_dirs=ref_dirs,
                           eliminate_duplicates=False)
-    elif algorithm_name == "NSGAII":
+    elif algorithm_name == "NSGA-II":
       # NSGAII Evaluation
       algorithm = NSGA2(pop_size=120,
                           sampling=BinaryRandomSampling(),
