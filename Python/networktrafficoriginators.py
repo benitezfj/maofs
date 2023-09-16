@@ -23,7 +23,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from methods.mi_calculation import calculate_mutual_info
 from methods.load_data import load_and_prepare_data
 from methods.objective_function import FeatureSelectionManyProblem
-
+from optimize_process.optimization_evaluation import optimize_and_save
 
 def optimize_model(model_name, dataset_name, algorithm_name, iterator):
     STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets")
@@ -62,8 +62,8 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
       algorithm = RVEA(pop_size=120,
                     sampling=BinaryRandomSampling(),
                     selection=TournamentSelection(func_comp=comp_by_cv_then_random),
-                    crossover=TwoPointCrossover(),
-                    mutation=BitflipMutation(),
+                    crossover=TwoPointCrossover(prob=0.8),
+                    mutation=BitflipMutation(prob=0.1),
                     ref_dirs=ref_dirs,
                     eliminate_duplicates=False)
     elif algorithm_name == "MOEA/D":
@@ -72,15 +72,15 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
                       n_neighbors=15, 
                       prob_neighbor_mating=0.7, 
                       sampling=BinaryRandomSampling(), 
-                      crossover=TwoPointCrossover(), 
-                      mutation=BitflipMutation())
+                      crossover=TwoPointCrossover(prob=0.8), 
+                      mutation=BitflipMutation(prob=0.1))
     elif algorithm_name == "NSGA-III":
       # NSGA-III Evaluation
       algorithm = NSGA3(pop_size=120,
                           sampling=BinaryRandomSampling(),
                           selection=TournamentSelection(func_comp=comp_by_cv_then_random),
-                          crossover=TwoPointCrossover(),
-                          mutation=BitflipMutation(),
+                          crossover=TwoPointCrossover(prob=0.8),
+                          mutation=BitflipMutation(prob=0.1),
                           ref_dirs=ref_dirs,
                           eliminate_duplicates=False)
     elif algorithm_name == "NSGA-II":
@@ -88,8 +88,8 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
       algorithm = NSGA2(pop_size=120,
                           sampling=BinaryRandomSampling(),
                           selection=TournamentSelection(func_comp=binary_tournament),
-                          crossover=TwoPointCrossover(),
-                          mutation=BitflipMutation(),
+                          crossover=TwoPointCrossover(prob=0.8),
+                          mutation=BitflipMutation(prob=0.1),
                           eliminate_duplicates=False)
 
     optimize_and_save(ref_dirs, dataset_name, algorithm, algorithm_name, model, model_name, problem, num_iterations)

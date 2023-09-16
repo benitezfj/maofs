@@ -1,8 +1,8 @@
 import csv
 
-from pymoo.indicators.hv import HV
-from pymoo.indicators.igd import IGD
-from pymoo.indicators.gd import GD
+# from pymoo.indicators.hv import HV
+# from pymoo.indicators.igd import IGD
+# from pymoo.indicators.gd import GD
 from pymoo.optimize import minimize
 
 def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name, model_instance, model_name, problem, num_iterations):
@@ -29,7 +29,7 @@ def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name
             value_fitness = np.unique(res.F, axis=0)
             value_solution = np.unique(res.X, axis=0)
 
-            metrics = np.array([gd(value_fitness), igd(value_fitness), hv(value_fitness)])
+            # metrics = np.array([gd(value_fitness), igd(value_fitness), hv(value_fitness)])
             # writerMetric.writerow(anp.column_stack(metrics))
 
             writerFitness.writerows(value_fitness)

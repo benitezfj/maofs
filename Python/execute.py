@@ -10,6 +10,6 @@ if __name__ == "__main__":
   for model_name in model_names:
     for dataset_alias in dataset_aliases:
       for algorithm_alias in algorithm_aliases:
-        algorithm_name = algorithm_alias
-        dataset_name = dataset_alias
-        optimize_model(model_name, dataset_name, algorithm_name, num_iterations)
+        # algorithm_name = algorithm_alias
+        # dataset_name = dataset_alias
+        optimize_model(model_name, dataset_alias, algorithm_alias, num_iterations)
