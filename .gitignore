@@ -1,0 +1,5 @@
+__pycache__/
+methods/__pycache__/
+optimize_process/__pycache__/
+
+datasets/

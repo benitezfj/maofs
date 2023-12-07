@@ -1,7 +1,6 @@
 import pandas as pd
-
+import numpy as np
 from sklearn.feature_selection import mutual_info_classif
-
 
 def calculate_mutual_info(features, classes, seed=42):
     np.random.seed(seed)
