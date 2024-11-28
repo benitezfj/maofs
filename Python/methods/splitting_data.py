@@ -13,7 +13,14 @@ def train_test_val_split(features, classes, encoder):
         train_df = pd.concat([features, label], axis=1)
         label_counts = train_df['label'].value_counts()
         majority_label = label_counts.idxmax()
-        balanced_train_df = train_df[train_df['label'] != majority_label].append(train_df[train_df['label'] == majority_label].sample(label_counts.min()))
+
+        #balanced_train_df = train_df[train_df['label'] != majority_label].append(train_df[train_df['label'] == majority_label].sample(label_counts.min()))
+
+        balanced_train_df = pd.concat([
+            train_df[train_df['label'] != majority_label], 
+            train_df[train_df['label'] == majority_label].sample(label_counts.min())
+        ])
+
         features = balanced_train_df.drop(['label'], axis=1)
         label = balanced_train_df['label']
         return features, label

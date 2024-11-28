@@ -39,8 +39,8 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
     X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=True)
     
    #  mutual_info_selected, features_subset = calculate_mutual_info(X_train, y_train)
-    symmetric_info_selected = calculate_symmetric_uncertainty(X_train, y_train) # , features_subset 
-
+    symmetric_info_selected = calculate_symmetric_uncertainty(X_train, y_train) # ,features_subset
+   
     if model_name == 'knn':
        model = KNeighborsClassifier()
     elif model_name == 'rf':
@@ -56,7 +56,7 @@ def optimize_model(model_name, dataset_name, algorithm_name, iterator):
 
     ref_dirs = get_reference_directions("das-dennis", 4, n_partitions=7)
 
-    n_threads = 10
+    n_threads = 4
     pool = ThreadPool(n_threads)
     runner = StarmapParallelization(pool.starmap)
 
