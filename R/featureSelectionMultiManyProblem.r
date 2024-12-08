@@ -27,7 +27,7 @@ balance_train <- function(data) {
 }
 
 
-dataset <- read_csv('C:/Users/Maria/Documents/R/maofs/Python/datasets/win10_normalize.csv',
+dataset <- read_csv('C:/Users/Maria/Documents/R/maofs/Python/datasets/win7_normalize.csv',
                     col_names = TRUE)
 
 features <- dataset %>% select(-type,-label) #Network, win10, linux_process
@@ -40,17 +40,18 @@ np$random$seed(as.integer(42))
 features.mutual_info <- su_measure(features, classes)
 np$random$seed(NULL)
 
+hist(features.mutual_info, breaks = seq(min(features.mutual_info), max(features.mutual_info), length.out = 50+1))
 # --------------------Solo para Network Dataset-----------------------
-set.seed(42)
-index_list <- sample(1:nrow(dataset), 80000, replace = TRUE)
-rm(.Random.seed, envir=globalenv())
-
-dataset <- dataset[index_list, ]
-
-features <- dataset %>% select(-type,-label)
-# features <- dataset %>% select(-type)
-classes <- dataset$type
-classes <- as.factor(classes)
+# set.seed(42)
+# index_list <- sample(1:nrow(dataset), 80000, replace = TRUE)
+# rm(.Random.seed, envir=globalenv())
+#
+# dataset <- dataset[index_list, ]
+#
+# features <- dataset %>% select(-type,-label)
+# # features <- dataset %>% select(-type)
+# classes <- dataset$type
+# classes <- as.factor(classes)
 # --------------------------------------------------------------------
 
 set.seed(123)
@@ -89,7 +90,7 @@ y_val <- dataset_val$label
 y_val <- as.factor(y_val)
 
 
-features.mutual_info <- features.mutual_info[features.mutual_info>0]
+# features.mutual_info <- features.mutual_info[features.mutual_info>0]
 
 rfost=sklearn$ensemble$RandomForestClassifier()
 knn=sklearn$neighbors$KNeighborsClassifier()
@@ -248,9 +249,9 @@ monitortest <- function(object, number_objectives, ...) {
 reference_dirs <- generate_reference_points(4,7)
 reference_point <- apply(reference_dirs, 2, max)
 
-dataset_name <- "win10"
-algorithm <- "NSGA-II"
-model <- "tree"#"rfost", "knn", "rfost"
+dataset_name <- "win7"
+algorithm <- "NSGA-III"
+model <- "tree" #"tree", "gnb", "knn", "rfost"
 
 # Use tidyverse
 # Open the files for writing
@@ -265,10 +266,10 @@ writeLines(c("GD,IGD,HV"), h)
 writeLines(c("Recall,NFS,MI,MacroF1,ACC"), k)
 
 # Write the data
-for (i in 1:5) {
+for (i in 1:10) {
   maofs  <- rmoo(type = "binary",
                 fitness = featureSelectionManyProblem,
-                strategy = algorithm,
+                algorithm = algorithm,
                 nBits = ncol(X_train),
                 popSize = 120,
                 selection=selection,
@@ -338,3 +339,14 @@ close(f)
 close(g)
 close(h)
 close(k)
+
+
+
+
+featureManyProblem(x = rep(1, length(features.mutual_info)),
+                            X_train = X_train,
+                            X_test = X_val,
+                            y_train = y_train,
+                            y_test = y_val,
+                            mutual_info = features.mutual_info,
+                            estimator = get(model))

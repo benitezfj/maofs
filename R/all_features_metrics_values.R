@@ -225,3 +225,14 @@ reference_dirs <- sweep(reference_dirs,2,c(2,1,2,2))
 all_features <- read_csv("all_features_fitness.csv")
 
 calculate_metrics_all_features(all_features,dataset_names,models,reference_dirs,reference_point)
+
+
+
+calculate_distance
+function(data_point, ref_point) {
+  distance <- 1
+  for (i in seq_along(ref_point)) {
+    distance <- distance * (ref_point[i] - data_point[i])
+  }
+  return(distance)
+}
