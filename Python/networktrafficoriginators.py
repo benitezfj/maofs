@@ -29,14 +29,25 @@ from methods.objective_function import FeatureSelectionManyProblem
 from optimize_process.optimization_evaluation import optimize_and_save
 
 def optimize_model(model_name, dataset_name, algorithm_name):
-    STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets")
-
+    # STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets")
+    STORAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "datasets"))
+    
     features, classes = load_and_prepare_data(STORAGE_DIR, dataset_name)
+    
+    X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=True, balance=False, random_state=42)
 
-    X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=True, balance=True, random_state=42)
+    print(f"Training Set Dimensions: X_train: {X_train.shape}, y_train: {y_train.shape}")
+    print(f"Test Set Dimensions: X_test: {X_test.shape}, y_test: {y_test.shape}")
+    print(f"Validation Set Dimensions: X_val: {X_val.shape}, y_val: {y_val.shape}")
 
     #  mutual_info_selected, features_subset = calculate_mutual_info(X_train, y_train)
     symmetric_info_selected = calculate_symmetric_uncertainty(X_train, y_train)  # ,features_subset
+
+    X_train_subset = X_train[symmetric_info_selected.index]
+    X_test_subset = X_test[symmetric_info_selected.index]
+    X_val_subset = X_val[symmetric_info_selected.index]
+    feature_names = X_train_subset.columns
+    feature_costs = np.ones(len(feature_names))
 
     if model_name == "knn":
         model = KNeighborsClassifier()
@@ -45,12 +56,6 @@ def optimize_model(model_name, dataset_name, algorithm_name):
     elif model_name == "gnb":
         model = GaussianNB()
 
-    X_train_subset = X_train[symmetric_info_selected.index]
-    X_test_subset = X_test[symmetric_info_selected.index]
-    X_val_subset = X_val[symmetric_info_selected.index]
-    feature_names = X_train_subset.columns
-    feature_costs = np.ones(len(feature_names))
-
     ref_dirs = get_reference_directions("das-dennis", 4, n_partitions=7)
 
     n_threads = 10
@@ -58,14 +63,16 @@ def optimize_model(model_name, dataset_name, algorithm_name):
     runner = StarmapParallelization(pool.starmap)
 
     problem = FeatureSelectionManyProblem(X_train=X_train_subset.values,
-					  X_test=X_test_subset.values,
-					  y_train=y_train,
-					  y_test=y_test,
-					  estimator=model,
-					  feature_names=feature_names,
-					  feature_costs=feature_costs,
-					  mutual_info=symmetric_info_selected.values,
-					  elementwise_runner=runner)
+    						X_test=X_val_subset.values,
+                            #   X_test=X_test_subset.values,
+                            y_train=y_train,
+                            y_test=y_val,
+                            # y_test=y_test,
+                            estimator=model,
+                            feature_names=feature_names,
+                            feature_costs=feature_costs,
+                            mutual_info=symmetric_info_selected.values,
+                            elementwise_runner=runner)
 
     # problem = FeatureSelectionManyProblem(X=features_subset.values,
     #                                       y=classes,
@@ -122,6 +129,8 @@ def optimize_model(model_name, dataset_name, algorithm_name):
         problem=problem,
         train_features=X_train_subset.values,
         train_classes=y_train,
-        val_features=X_val_subset.values,
-        val_classes=y_val,
+        # val_features=X_val_subset.values,
+        val_features=X_test_subset.values,
+        # val_classes=y_val,
+        val_classes=y_test,
         filter_info=symmetric_info_selected.values)

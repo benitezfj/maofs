@@ -7,8 +7,8 @@ from sklearn.model_selection import train_test_split
 
 def train_test_val_split(features, classes, encoder, balance, random_state):
     X_train, X_test, y_train, y_test = train_test_split(features, classes, test_size=0.2, random_state=random_state)
-    _, X_val, _, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=random_state)
-    # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=random_state)
+    # _, X_val, _, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=random_state)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=random_state)
 
     def balance_train(features, label):
         train_df = pd.concat([features, label], axis=1)
