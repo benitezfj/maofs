@@ -29,7 +29,6 @@ from methods.load_data import load_and_prepare_data
 from methods.objective_function import FeatureSelectionManyProblem
 from optimize_process.optimization_evaluation import optimize_and_save
 
-
 def optimize_model(model_name, dataset_name, algorithm_name, n_outer_folds, n_inner_folds):
     # Load the dataset and separate features and classes
     # STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets")
