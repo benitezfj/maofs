@@ -7,7 +7,8 @@ def load_and_prepare_data(storage, dataset_name):
     dataset = pd.read_csv(dataset_path, header=0, encoding="utf-8", skip_blank_lines=False, delimiter=r",")
 
     features = dataset.drop(["type", "label"], axis=1)
-    classes = dataset["label"]
+    classes = dataset["type"]
+    # classes = dataset["label"]
     # features = coding_normalization(features)
     return features, classes
 

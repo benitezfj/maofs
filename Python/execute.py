@@ -1,7 +1,7 @@
 import time
 from networktrafficoriginators import optimize_model
 
-model_names = ["rf"]
+model_names = ["knn"]
 dataset_aliases = ["win7"]
 algorithm_aliases = ["RVEA"]
 # model_names = ["gnb", "rf", "knn"]

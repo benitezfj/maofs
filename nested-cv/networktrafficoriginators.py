@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import multiprocessing
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.moo.nsga3 import NSGA3
@@ -15,14 +16,14 @@ from pymoo.operators.selection.tournament import TournamentSelection
 
 from pymoo.core.problem import StarmapParallelization
 from pymoo.util.ref_dirs import get_reference_directions
-from multiprocessing.pool import ThreadPool
+# from multiprocessing.pool import ThreadPool
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 
-from methods.splitting_data import balance_train, encode_labels  # ,train_test_val_split
+from methods.splitting_data import balance_train_smote, balance_train_random, balance_train_adasyn, encode_labels  # ,train_test_val_split
 
 from methods.su_calculation import calculate_symmetric_uncertainty
 from methods.load_data import load_and_prepare_data
@@ -58,7 +59,9 @@ def optimize_model(model_name, dataset_name, algorithm_name, n_outer_folds, n_in
             y_train, y_val = (y_outer_train.iloc[inner_train_idx], y_outer_train.iloc[val_idx])
 
             # Optional: Balance and encode the training data
-            # X_train, y_train = balance_train(X_train, y_train)
+            # X_train, y_train = balance_train_smote(X_train, y_train, 42)
+            # X_train, y_train = balance_train_random(X_train, y_train, 42)
+            X_train, y_train = balance_train_adasyn(X_train, y_train, 42)
             y_train, y_test, y_val = encode_labels(y_train, y_test, y_val)
 
             print(f"Inner Training Set Dimensions: X_train: {X_train.shape}, y_train: {y_train.shape}")
@@ -82,8 +85,12 @@ def optimize_model(model_name, dataset_name, algorithm_name, n_outer_folds, n_in
             elif model_name == "gnb":
                 model = GaussianNB()
 
-            n_threads = 10
-            pool = ThreadPool(n_threads)
+            # n_threads = 10
+            # pool = ThreadPool(n_threads)
+            # runner = StarmapParallelization(pool.starmap)
+            # initialize the thread pool and create the runner
+            n_proccess = 4
+            pool = multiprocessing.Pool(n_proccess)
             runner = StarmapParallelization(pool.starmap)
 
             problem = FeatureSelectionManyProblem(X_train=X_train_subset.values,

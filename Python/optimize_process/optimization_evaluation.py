@@ -39,6 +39,9 @@ def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name
         writerCross.writerow(["ACC1", "ACC2", "ACC3", "ACC4", "ACC5"])
 
         for i in range(num_iterations):
+            
+            print(f"Iteration Run {i + 1}:")
+
             res = minimize(problem,
                            algorithm_instance,
                            termination=("n_gen", 200),
@@ -87,5 +90,3 @@ def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name
             writerPopulation.writerow([""])
             writerEval.writerow([""])
             writerCross.writerow([""])
-
-            print(i, " ")

@@ -7,11 +7,10 @@ from pymoo.indicators.igd import IGD
 from pymoo.indicators.gd import GD
 from pymoo.optimize import minimize
 
-# from sklearn.model_selection import StratifiedKFold, cross_val_score, KFold
 from methods.objectives import featureSelectionMany
+# from sklearn.model_selection import StratifiedKFold, cross_val_score, KFold
 
-
-def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name, model_instance, model_name, problem, train_features, train_classes, val_features, val_classes, filter_info, outer_fold, inner_fold, num_iterations=20):
+def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name, model_instance, model_name, problem, train_features, train_classes, val_features, val_classes, filter_info, outer_fold, inner_fold, num_iterations=10):
 
     print("Evaluating...", " Model: ", model_name, " Algorithm: ", algorithm_name, " Dataset: ", dataset_name)
 
@@ -81,4 +80,3 @@ def optimize_and_save(ref_dirs, dataset_name, algorithm_instance, algorithm_name
             writerPopulation.writerow([""])
             writerEval.writerow([""])
             # writerCross.writerow([""])
-

@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import multiprocessing
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.moo.nsga3 import NSGA3
@@ -15,7 +16,7 @@ from pymoo.operators.selection.tournament import TournamentSelection
 
 from pymoo.core.problem import StarmapParallelization
 from pymoo.util.ref_dirs import get_reference_directions
-from multiprocessing.pool import ThreadPool
+# from multiprocessing.pool import ThreadPool
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
@@ -31,10 +32,10 @@ from optimize_process.optimization_evaluation import optimize_and_save
 def optimize_model(model_name, dataset_name, algorithm_name):
     # STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets")
     STORAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "datasets"))
-    
+
     features, classes = load_and_prepare_data(STORAGE_DIR, dataset_name)
-    
-    X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=True, balance=False, random_state=42)
+
+    X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=True, balance=True, random_state=42)
 
     print(f"Training Set Dimensions: X_train: {X_train.shape}, y_train: {y_train.shape}")
     print(f"Test Set Dimensions: X_test: {X_test.shape}, y_test: {y_test.shape}")
@@ -56,10 +57,11 @@ def optimize_model(model_name, dataset_name, algorithm_name):
     elif model_name == "gnb":
         model = GaussianNB()
 
-    ref_dirs = get_reference_directions("das-dennis", 4, n_partitions=7)
-
-    n_threads = 10
-    pool = ThreadPool(n_threads)
+    # n_threads = 10
+    # pool = ThreadPool(n_threads)
+    # runner = StarmapParallelization(pool.starmap)
+    n_proccess = 4
+    pool = multiprocessing.Pool(n_proccess)
     runner = StarmapParallelization(pool.starmap)
 
     problem = FeatureSelectionManyProblem(X_train=X_train_subset.values,
@@ -83,6 +85,7 @@ def optimize_model(model_name, dataset_name, algorithm_name):
     #                                       mutual_info=mutual_info_selected.values,
     #                                       elementwise_runner=runner)
 
+    ref_dirs = get_reference_directions("das-dennis", 4, n_partitions=7)
     algorithm = None  # Initialize algorithm instance
 
     if algorithm_name == "RVEA":
