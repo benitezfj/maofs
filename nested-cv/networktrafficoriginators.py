@@ -23,7 +23,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 
-from methods.splitting_data import balance_train_smote, balance_train_random, balance_train_adasyn, encode_labels  # ,train_test_val_split
+from methods.splitting_data import balance_train_smote, balance_train_random, balance_train_adasyn, encode_labels, balance_train # ,train_test_val_split
 
 from methods.su_calculation import calculate_symmetric_uncertainty
 from methods.load_data import load_and_prepare_data
@@ -61,7 +61,7 @@ def optimize_model(model_name, dataset_name, algorithm_name, n_outer_folds, n_in
             # Optional: Balance and encode the training data
             # X_train, y_train = balance_train_smote(X_train, y_train, 42)
             # X_train, y_train = balance_train_random(X_train, y_train, 42)
-            X_train, y_train = balance_train_adasyn(X_train, y_train, 42)
+            # X_train, y_train = balance_train_adasyn(X_train, y_train, 42)
             y_train, y_test, y_val = encode_labels(y_train, y_test, y_val)
 
             print(f"Inner Training Set Dimensions: X_train: {X_train.shape}, y_train: {y_train.shape}")

@@ -22,7 +22,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-from methods.splitting_data import train_test_val_split
+from methods.splitting_data import train_test_val_split, balance_train_smote, encode_labels
 
 from methods.su_calculation import calculate_symmetric_uncertainty
 from methods.load_data import load_and_prepare_data
@@ -35,7 +35,11 @@ def optimize_model(model_name, dataset_name, algorithm_name):
 
     features, classes = load_and_prepare_data(STORAGE_DIR, dataset_name)
 
-    X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=True, balance=True, random_state=42)
+    X_train, X_test, X_val, y_train, y_test, y_val = train_test_val_split(features, classes, encoder=False, balance=False, random_state=42)
+
+    # Optional: Balance and encode the training data
+    # X_train, y_train = balance_train_smote(X_train, y_train, 42)
+    # y_train, y_test, y_val = encode_labels(y_train, y_test, y_val)
 
     print(f"Training Set Dimensions: X_train: {X_train.shape}, y_train: {y_train.shape}")
     print(f"Test Set Dimensions: X_test: {X_test.shape}, y_test: {y_test.shape}")
@@ -60,10 +64,10 @@ def optimize_model(model_name, dataset_name, algorithm_name):
     # n_threads = 10
     # pool = ThreadPool(n_threads)
     # runner = StarmapParallelization(pool.starmap)
-    n_proccess = 4
+    n_proccess = 12
     pool = multiprocessing.Pool(n_proccess)
     runner = StarmapParallelization(pool.starmap)
-
+                                          
     problem = FeatureSelectionManyProblem(X_train=X_train_subset.values,
     						X_test=X_val_subset.values,
                             #   X_test=X_test_subset.values,

@@ -6,7 +6,6 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 from sklearn.base import clone
 
-
 def featureSelectionMany(x, X_train, y_train, X_test, y_test, mutual_info, estimator):
     feature_costs = np.ones(X_train.shape[1])
 

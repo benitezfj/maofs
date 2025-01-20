@@ -1,13 +1,30 @@
 import pandas as pd
 
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler # , StandardScaler
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler  # , StandardScaler
 from sklearn.model_selection import train_test_split
 
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE, RandomOverSampler, ADASYN
-from imblearn.under_sampling import RandomUnderSampler
+from imblearn.under_sampling import RandomUnderSampler, NearMiss
 
 from collections import Counter
+# from sklearn.utils import resample #Balance the dataset
+
+def balance_train(features, label):
+    train_df = pd.concat([features, label], axis=1)
+    label_counts = train_df[label.name].value_counts()
+    majority_label = label_counts.idxmax()
+    balanced_train_df = pd.concat(
+        [
+            train_df[train_df[label.name] != majority_label],
+            train_df[train_df[label.name] == majority_label].sample(label_counts.min()),
+        ]
+    )
+
+    features = balanced_train_df.drop([label.name], axis=1)
+    label = balanced_train_df[label.name]
+
+    return features, label
 
 def balance_train_smote(features, label, random_state):
     # Get the class distribution
@@ -246,7 +263,6 @@ def balance_train_nearmiss(features, label, random_state):
     print("Original class distribution:", label_counts)
     print("Balanced class distribution:", Counter(label_resampled))
     return features_resampled, label_resampled
-
 
 def encode_labels(y_train, y_test, y_val):
     le = LabelEncoder().fit(y_train.values)

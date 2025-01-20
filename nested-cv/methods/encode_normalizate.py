@@ -2,7 +2,6 @@ from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler
 from pandas import DataFrame
 from pandas.api.types import is_numeric_dtype
 
-
 def coding_normalization(dataset):
     """
     Encodes categorical features and normalizes all features in a dataset.
