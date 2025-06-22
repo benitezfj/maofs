@@ -16,4 +16,6 @@ if __name__ == "__main__":
                 optimize_model(model_name, dataset_alias, algorithm_alias, 2, 2)
                 end_time = time.time()
                 execution_time = end_time - start_time
-                print(f"Execution time for {model_name}, {dataset_alias}, {algorithm_alias}: {execution_time:.4f} seconds")
+                print(
+                    f"Execution time for {model_name}, {dataset_alias}, {algorithm_alias}: {execution_time:.4f} seconds"
+                )

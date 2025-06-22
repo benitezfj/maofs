@@ -6,25 +6,38 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 from sklearn.base import clone
 
+
 def featureSelectionMany(x, X_train, y_train, X_test, y_test, mutual_info, estimator):
     feature_costs = np.ones(X_train.shape[1])
 
     def validation(x, X_train, y_train, X_test, y_test, estimator):
         clf = clone(estimator)
         if all(not element for element in x):
-            metrics = metrics1 = metrics2 = 0 # Return 0 for all metrics when no features are selected
+            metrics = metrics1 = metrics2 = (
+                0  # Return 0 for all metrics when no features are selected
+            )
 
         else:
             clf.fit(X_train[:, x], y_train)
             y_pred = clf.predict(X_test[:, x])
             metrics = recall_score(y_test, y_pred, average="macro", zero_division=1)
-            metrics1 = f1_score(y_test, y_pred, labels=list(set(y_train)), average="macro", zero_division=1)
-            metrics2 = accuracy_score(y_test, y_pred)  # Compute accuracy as the third metric
+            metrics1 = f1_score(
+                y_test,
+                y_pred,
+                labels=list(set(y_train)),
+                average="macro",
+                zero_division=1,
+            )
+            metrics2 = accuracy_score(
+                y_test, y_pred
+            )  # Compute accuracy as the third metric
             # metrics1 = f1_score(y_test, y_pred, labels=list(set(y_train.values)), average='macro')
 
         return metrics, metrics1, metrics2
 
-    scores, scores1, scores2 = validation(x, X_train, y_train, X_test, y_test, estimator)
+    scores, scores1, scores2 = validation(
+        x, X_train, y_train, X_test, y_test, estimator
+    )
 
     costs_selected = []
     feature_costs = np.array(feature_costs)

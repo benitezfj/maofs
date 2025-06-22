@@ -9,8 +9,21 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 from sklearn.base import clone
 
+
 class FeatureSelectionManyProblem(ElementwiseProblem):
-    def __init__(self, X_train, X_test, y_train, y_test, estimator, feature_names, feature_costs, mutual_info, objectives=4, **kwargs):
+    def __init__(
+        self,
+        X_train,
+        X_test,
+        y_train,
+        y_test,
+        estimator,
+        feature_names,
+        feature_costs,
+        mutual_info,
+        objectives=4,
+        **kwargs
+    ):
         self.estimator = estimator
         self.L = feature_names
         self.n_max = len(self.L)
@@ -22,7 +35,9 @@ class FeatureSelectionManyProblem(ElementwiseProblem):
         self.y_train = y_train
         self.y_test = y_test
 
-        super().__init__(n_var=len(self.L), n_obj=objectives, elementwise_evaluation=True, **kwargs)
+        super().__init__(
+            n_var=len(self.L), n_obj=objectives, elementwise_evaluation=True, **kwargs
+        )
 
     def validation(self, x):
         clf = clone(self.estimator)
@@ -36,8 +51,16 @@ class FeatureSelectionManyProblem(ElementwiseProblem):
             # y_pred_proba = clf.predict_proba(self.X_test[:, x])
             # metrics = roc_auc_score(self.y_test, y_pred_proba, average = 'macro', multi_class='ovo')
             # metrics = accuracy_score(self.y_test, y_pred)
-            metrics = recall_score(self.y_test, y_pred, average="macro", zero_division=1)
-            metrics1 = f1_score(self.y_test, y_pred, labels=list(set(self.y_train)), average="macro", zero_division=1)
+            metrics = recall_score(
+                self.y_test, y_pred, average="macro", zero_division=1
+            )
+            metrics1 = f1_score(
+                self.y_test,
+                y_pred,
+                labels=list(set(self.y_train)),
+                average="macro",
+                zero_division=1,
+            )
             # metrics1 = f1_score(self.y_test, y_pred, labels=list(set(self.y_train.values)), average='macro', zero_division=1)
 
             return metrics, metrics1

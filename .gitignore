@@ -1,6 +1,9 @@
 __pycache__/
+
 methods/__pycache__/
 optimize_process/__pycache__/
+R/old/
+
 datasets/
-Old/
+
 *.csv

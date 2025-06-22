@@ -1,3 +1,6 @@
+setwd('C:/Users/Maria/Documents/R/Notebooks/Result Smote')
+setwd('C:/Users/Maria/Documents/Python Scripts/resultados 90 iteraciones/toniot')
+
 library(caret)
 library(tidyverse)
 library(rmoo)
@@ -21,7 +24,6 @@ normalize_data <- function(data) {
   })
   return(as.data.frame(normalized_data))
 }
-
 
 macro_f1 <- function(act, prd) {
 
@@ -84,15 +86,13 @@ featureSelectionManyProblem <- function(x, X_train, X_test, y_train, y_test, mut
   return(as.vector(out))
 }
 
-
-
 # Calcular los fitness de todos los features
 calculate_all_features <- function(dataset_names, algorithms, models, seed_1=42, seed_2=123){
   knn=sklearn$neighbors$KNeighborsClassifier()
   gnb=sklearn$naive_bayes$GaussianNB()
   results <- list()
   for (data in dataset_names) {
-    pattern <- "%s_normalize.csv"
+      pattern <- "%s_normalize.csv"
     dataset_name <- sprintf(pattern, data)
     dataset <- read_csv(dataset_name, col_names = TRUE)
 
@@ -139,7 +139,6 @@ calculate_all_features <- function(dataset_names, algorithms, models, seed_1=42,
     x <- as.logical(round(rep(1,ncol(X_train))))
     # x <- as.logical(round(runif(ncol(X_train))))
 
-
     for (model in models) {
       all_feature <- featureSelectionManyProblem(x = rep(1, length(features.mutual_info)),
                                                  X_train = X_train,
@@ -168,27 +167,13 @@ calculate_all_features <- function(dataset_names, algorithms, models, seed_1=42,
   write.csv(all_results, "all_features_fitness.csv", row.names = FALSE)
 }
 
-
-worst_point <- c(0,1,0,0)
-ideal_point <- c(-1,0,-1,-1)
-nadir_point <- c(0.5,1.5,0.5,0.5)
-
-reference_dirs <- generate_reference_points(4,7)
-reference_point <- worst_point
-
-dataset_names <- c("network", "win10", "win7", "linux_process", "linux_disk", "linux_memory")
-algorithms <- c("rvea", "moead","nsgaiii", "nsgaii")
-models <- c("knn","gnb")
-
-calculate_all_features(dataset_names, algorithms, models)
-
-
-ideal_point <- c(-1,0,-1,-1)
-worst_point <- c(0,1,0,0)
-nadir_point <- c(0.5,1.5,0.5,0.5)
-reference_point <- nadir_point
-reference_dirs <- reference_dirs_norm <- generate_reference_points(4,7)
-reference_dirs <- sweep(reference_dirs,2,c(1,0.6,1,1))
+calculate_distance <- function(data_point, ref_point) {
+  distance <- 1
+  for (i in seq_along(ref_point)) {
+    distance <- distance * (ref_point[i] - data_point[i])
+  }
+  return(distance)
+}
 
 calculate_metrics_all_features <- function(all_features_dataset,dataset_names,models,reference_dirs,reference_point){
   all_metrics <- list()
@@ -215,24 +200,191 @@ calculate_metrics_all_features <- function(all_features_dataset,dataset_names,mo
 
 }
 
-dataset_names <- c("win10", "win7", "linux_process", "linux_disk", "linux_memory","network")
-models <- c("knn","gnb")
+# --------------------------------NUEVO 25/5/2025----------------------------------------------
+library(caret)
+library(tidyverse)
+library(rmoo)
+library(reticulate)
+library(class)
+library(e1071)
+library(dplyr)
+library(readr)
+library(ecr)
+library(eaf)
 
-reference_point <- c(0.5,1.5,0.5,0.5)
-reference_dirs <- reference_dirs_norm <- generate_reference_points(4,7)
-reference_dirs <- sweep(reference_dirs,2,c(2,1,2,2))
+# Configurar entorno de Python
+myenvs <- conda_list()
+use_condaenv(myenvs$name[2], required = TRUE)
 
+# Importar librerías de Python
+np <- import("numpy")
+pd <- import("pandas")
+sklearn <- import("sklearn")
+
+# Funciones auxiliares
+normalize_data <- function(data) {
+  as.data.frame(lapply(data, function(col) (col - min(col)) / (max(col) - min(col))))
+}
+
+macro_f1 <- function(act, prd) {
+  f1_scores <- sapply(unique(act), function(i) {
+    tp <- sum(act == i & prd == i)
+    fp <- sum(act != i & prd == i)
+    fn <- sum(act == i & prd != i)
+    prec <- ifelse((tp + fp) > 0, tp / (tp + fp), 0)
+    rec <- ifelse((tp + fn) > 0, tp / (tp + fn), 0)
+    f1 <- ifelse((prec + rec) > 0, 2 * prec * rec / (prec + rec), 0)
+    return(f1)
+  })
+  mean(f1_scores)
+}
+
+featureSelectionManyProblem <- function(x, X_train, X_test, y_train, y_test, mutual_info, estimator) {
+  x <- as.logical(x)
+  feature_costs <- rep(1, ncol(X_train))
+
+  if (all(!x)) return(rep(0, 4))
+
+  clf <- sklearn$clone(estimator)
+  clf$fit(X_train[, x], y_train)
+  y_pred <- clf$predict(X_test[, x])
+
+  acc <- mean(y_pred == y_test)
+  mafs <- macro_f1(y_test, y_pred)
+  cost_sum <- sum(feature_costs[x]) / sum(feature_costs)
+  mutual_info_costs <- sum(mutual_info[x]) / sum(mutual_info)
+
+  c(-acc, cost_sum, -mutual_info_costs, -mafs)
+}
+
+# Lógica principal
+
+calculate_all_features <- function(dataset_names, algorithms, models, seed_1 = 42, seed_2 = 123) {
+  model_map <- list(knn = sklearn$neighbors$KNeighborsClassifier(),
+                    gnb = sklearn$naive_bayes$GaussianNB())
+
+  results <- list()
+
+  for (dataset_name in dataset_names) {
+    dataset_path <- sprintf("%s_normalize.csv", dataset_name)
+    dataset <- read_csv(dataset_path,show_col_types = FALSE)
+
+    features <- dataset %>% select(-type, -label)
+
+    # Seleccionar columnas de características
+    # if (dataset_name %in% c("linux_memory", "linux_disk", "win7")) {
+    #   features <- dataset %>% select(-type)
+    # } else {
+    #   features <- dataset %>% select(-type, -label)
+    # }
+
+    classes <- as.factor(dataset$type)
+
+    # Calcular mutual information
+    np$random$seed(as.integer(seed_1))
+    mutual_info <- sklearn$feature_selection$mutual_info_classif(features, classes)
+    np$random$seed(NULL)
+
+    # Particionar datos
+    set.seed(seed_2)
+    idx_train <- createDataPartition(classes, p = 0.7, list = FALSE)
+    rm(.Random.seed, envir = globalenv())
+
+    dataset_train <- dataset[idx_train, ]
+    dataset_test  <- dataset[-idx_train, ]
+
+    # Seleccionar características informativas
+    informative_cols <- which(mutual_info > 0)
+    mutual_info <- mutual_info[informative_cols]
+
+    X_train <- dataset_train[informative_cols]
+    X_test  <- dataset_test[informative_cols]
+    y_train <- as.factor(dataset_train$type)
+    y_test  <- as.factor(dataset_test$type)
+
+    x_init <- rep(1, length(informative_cols))
+
+    for (model in models) {
+      estimator <- model_map[[model]]
+
+      metrics <- featureSelectionManyProblem(x = x_init,
+                                             X_train = X_train,
+                                             X_test = X_test,
+                                             y_train = y_train,
+                                             y_test = y_test,
+                                             mutual_info = mutual_info,
+                                             estimator = estimator)
+
+      df_result <- data.frame(Dataset = dataset_name, Model = model,
+                              ACC = metrics[1], NFS = metrics[2],
+                              MI = metrics[3], MACRO_F1 = metrics[4])
+
+      print(df_result)
+      results[[length(results) + 1]] <- df_result
+    }
+  }
+
+  all_results <- bind_rows(results)
+  write_csv(all_results, "all_features_fitness.csv")
+  print(all_results)
+}
+
+calculate_distance <- function(data_point, ref_point) {
+  prod(ref_point - data_point)
+}
+
+# Función principal para calcular las métricas
+calculate_metrics_all_features <- function(all_features_dataset, dataset_names, models, reference_dirs, reference_point) {
+  all_metrics <- lapply(dataset_names, function(dataset) {
+    lapply(models, function(model) {
+      # Filtrado de datos para el dataset y modelo actuales
+      features_row <- all_features_dataset %>%
+        filter(Dataset == dataset, Model == model)
+
+      # Extraer las 4 métricas
+      all_features <- c(features_row$ACC, features_row$NFS, features_row$MI, features_row$MACRO_F1)
+
+      # Cálculo de métricas
+      hv <- calculate_distance(all_features, reference_point)
+      gd <- ecr::computeGenerationalDistance(as.matrix(all_features), t(reference_dirs))
+      igd <- eaf::igd_plus(data = t(all_features), reference = reference_dirs)
+
+      # Crear data.frame con las métricas
+      data.frame(
+        Model = model,
+        Dataset = dataset,
+        HV = hv,
+        GD = gd,
+        IGD = igd
+      )
+    })
+  })
+
+  # Aplanar la lista y guardar como CSV
+  all_metrics_df <- do.call(rbind, unlist(all_metrics, recursive = FALSE))
+  write.csv(all_metrics_df, "all_features_metrics.csv", row.names = FALSE)
+}
+# ------------------------------------------------------------------------------
+
+# Parámetros
+dataset_names <- c("win10", "win7", "linux_process", "linux_disk", "linux_memory", "network")
+algorithms <- c("rvea", "moead", "nsgaiii", "nsgaii")
+models <- c("knn", "gnb")
+
+worst_point <- c(0,1,0,0)
+ideal_point <- c(-1,0,-1,-1)
+nadir_point <- c(0.5,1.5,0.5,0.5)
+
+# Generar puntos de referencia y escalar columnas
+reference_dirs <- reference_dirs_norm <- generate_reference_points(4, 7)
+reference_dirs <- sweep(reference_dirs, 2, c(2, 1, 2, 2), FUN = "/") #sweep(reference_dirs, 2, (1, 0.6, 1, 1), FUN = "/")
+reference_point <- nadir_point
+
+# Calcular features
+calculate_all_features(dataset_names, algorithms, models)
 all_features <- read_csv("all_features_fitness.csv")
 
-calculate_metrics_all_features(all_features,dataset_names,models,reference_dirs,reference_point)
+# Calcular métricas
+calculate_metrics_all_features(all_features, dataset_names, models, reference_dirs, reference_point)
 
 
-
-calculate_distance
-function(data_point, ref_point) {
-  distance <- 1
-  for (i in seq_along(ref_point)) {
-    distance <- distance * (ref_point[i] - data_point[i])
-  }
-  return(distance)
-}

@@ -1,8 +1,8 @@
 import time
 from networktrafficoriginators import optimize_model
 
-model_names = ["knn"]
-dataset_aliases = ["win7"]
+model_names = ["rf"]
+dataset_aliases = ["win10"]
 algorithm_aliases = ["RVEA"]
 # model_names = ["gnb", "rf", "knn"]
 # dataset_aliases = ["linux_memory", "linux_disk", "linux_process", "network", "win7", "win10"]
@@ -18,4 +18,3 @@ if __name__ == "__main__":
                 end_time = time.time()
                 execution_time = end_time - start_time
                 print(f"Execution time for {model_name}, {dataset_alias}, {algorithm_alias}: {execution_time:.4f} seconds")
-                # print(model_name, dataset_alias, algorithm_alias)  # prueba

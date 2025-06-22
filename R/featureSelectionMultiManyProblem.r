@@ -14,6 +14,7 @@ np <- import("numpy")
 pd <- import("pandas")
 sklearn <- import("sklearn")
 source_python("C:/Users/Maria/Documents/R/maofs/Python/methods/symmetrical_uncertainty.py") #su_measure
+source_python("C:/Users/Maria/Documents/R/maofs/Python/methods/smote_balancing.py")
 
 balance_train <- function(data) {
   label_counts <- table(data$label)
@@ -26,32 +27,24 @@ balance_train <- function(data) {
   return(balanced_train_df)
 }
 
-
-dataset <- read_csv('C:/Users/Maria/Documents/R/maofs/Python/datasets/win7_normalize.csv',
-                    col_names = TRUE)
+dataset <- read_csv('C:/Users/Maria/Documents/Python Scripts/ToN_IoT/Codificados y Normalizados/win10_normalize.csv',
+                    col_names = TRUE,show_col_types = FALSE)
 
 features <- dataset %>% select(-type,-label) #Network, win10, linux_process
 classes <- dataset$label
 classes <- as.factor(classes)
 
-# Calculate the mutual information or symmetrical uncentently
-np$random$seed(as.integer(42))
-# features.mutual_info <- sklearn$feature_selection$mutual_info_classif(features, classes)
-features.mutual_info <- su_measure(features, classes)
-np$random$seed(NULL)
-
-hist(features.mutual_info, breaks = seq(min(features.mutual_info), max(features.mutual_info), length.out = 50+1))
 # --------------------Solo para Network Dataset-----------------------
-# set.seed(42)
-# index_list <- sample(1:nrow(dataset), 80000, replace = TRUE)
-# rm(.Random.seed, envir=globalenv())
-#
-# dataset <- dataset[index_list, ]
-#
-# features <- dataset %>% select(-type,-label)
-# # features <- dataset %>% select(-type)
-# classes <- dataset$type
-# classes <- as.factor(classes)
+set.seed(42)
+index_list <- sample(1:nrow(dataset), 80000, replace = TRUE)
+rm(.Random.seed, envir=globalenv())
+
+dataset <- dataset[index_list, ]
+
+features <- dataset %>% select(-type,-label)
+# features <- dataset %>% select(-type)
+classes <- dataset$type
+classes <- as.factor(classes)
 # --------------------------------------------------------------------
 
 set.seed(123)
@@ -73,24 +66,38 @@ dataset_train <- balance_train(dataset_train)
 
 # X_train <- dataset_train %>% select(-label)
 X_train <- dataset_train %>% select(-type,-label)
-#X_train <- X_train[,features.mutual_info>0]
 y_train <- dataset_train$label
 y_train <- as.factor(y_train)
 
 # X_test <- dataset_test %>% select(-label)
 X_test <- dataset_test %>% select(-type,-label)
-#X_test <- X_test[,features.mutual_info>0]
 y_test <- dataset_test$label
 y_test <- as.factor(y_test)
 
 # X_val <- dataset_val %>% select(-label)
 X_val <- dataset_val %>% select(-type,-label)
-#X_val <- X_val[,features.mutual_info>0]
 y_val <- dataset_val$label
 y_val <- as.factor(y_val)
 
 
-# features.mutual_info <- features.mutual_info[features.mutual_info>0]
+# Calculate the mutual information or symmetrical uncentently
+np$random$seed(as.integer(42))
+# features.mutual_info <- sklearn$feature_selection$mutual_info_classif(features, classes)
+# features.mutual_info <- su_measure(features, classes)
+features.mutual_info <- su_measure(X_train, y_train)
+np$random$seed(NULL)
+
+hist(features.mutual_info, breaks = seq(min(features.mutual_info), max(features.mutual_info), length.out = 50+1))
+
+features.mutual_info.subset <- features.mutual_info[features.mutual_info>0]
+
+hist(features.mutual_info.subset, breaks = seq(min(features.mutual_info.subset), max(features.mutual_info.subset), length.out = 50+1))
+
+X_train_subset <- X_train[,features.mutual_info>0]
+X_test_subset <- X_test[,features.mutual_info>0]
+X_val_subset <- X_val[,features.mutual_info>0]
+
+feature_costs  <- rep(1, length(X_train_subset))
 
 rfost=sklearn$ensemble$RandomForestClassifier()
 knn=sklearn$neighbors$KNeighborsClassifier()
@@ -178,8 +185,7 @@ featureManyProblem <- function(x, X_train, X_test, y_train, y_test, mutual_info,
       clf$fit(X_train[,x], y_train)
       y_pred <- clf$predict(X_test[,x])
       acc <- mean(y_pred == y_test)
-      recall <- caret::specificity(table(Actual=as.factor(y_test),
-                                         Predicted=as.factor(y_pred)))
+      recall <- caret::specificity(table(Actual=as.factor(y_test), Predicted=as.factor(y_pred)))
       mafs <- macro_f1(act=y_test, prd=y_pred)
       return(list(metrics = recall, metrics1 = mafs, metrics2 = acc))
     }
@@ -249,9 +255,9 @@ monitortest <- function(object, number_objectives, ...) {
 reference_dirs <- generate_reference_points(4,7)
 reference_point <- apply(reference_dirs, 2, max)
 
-dataset_name <- "win7"
-algorithm <- "NSGA-III"
-model <- "tree" #"tree", "gnb", "knn", "rfost"
+dataset_name <- "win10"
+algorithm <- "NSGA-II"
+model <- "gnb" #"tree", "gnb", "knn", "rfost"
 
 # Use tidyverse
 # Open the files for writing
@@ -269,8 +275,8 @@ writeLines(c("Recall,NFS,MI,MacroF1,ACC"), k)
 for (i in 1:10) {
   maofs  <- rmoo(type = "binary",
                 fitness = featureSelectionManyProblem,
-                algorithm = algorithm,
-                nBits = ncol(X_train),
+                strategy = algorithm,
+                nBits = length(feature_costs),
                 popSize = 120,
                 selection=selection,
                 population = population,
@@ -280,11 +286,11 @@ for (i in 1:10) {
                 monitor = monitortest,
                 parallel = FALSE,
                 summary = FALSE,
-                X_train=X_train,
-                X_test=X_test,
+                X_train=X_train_subset,
+                X_test=X_test_subset,,
                 y_train=y_train,
                 y_test=y_test,
-                mutual_info = features.mutual_info,
+                mutual_info = features.mutual_info.subset,
                 estimator = get(model),
                 seed=i)
 
@@ -294,31 +300,35 @@ for (i in 1:10) {
                                           t(reference_dirs))
   hv  <- emoa::dominated_hypervolume(points = t(unique(maofs@fitness[maofs@f[[1]],])),
                                      ref = reference_point)
-  writeLines(as.character(c(gd, igd, hv)), h, sep = ",")
+  # writeLines(as.character(c(gd, igd, hv)), h, sep = ",")
+  writeLines(paste(gd, igd, hv, sep = ","), h)
 
   unique_fitness <- unique(maofs@fitness[maofs@f[[1]],])
 
   for (j in seq_len(nrow(unique_fitness))) {
-    writeLines(as.character(unique_fitness[j,]), f, sep = ",")
+    # writeLines(as.character(unique_fitness[j,]), f, sep = ",")
+    writeLines(paste(unique_fitness[j,], collapse = ","), f)
     writeLines("\n", f)
   }
 
   unique_population <- unique(maofs@population[maofs@f[[1]],])
 
   for (j in seq_len(nrow(unique_population))) {
-    writeLines(as.character(unique_population[j,]), g, sep = ",")
+    # writeLines(as.character(unique_population[j,]), g, sep = ",")
+    writeLines(paste(unique_population[j,], collapse = ","), g)
     writeLines("\n", g)
   }
 
   for (j in seq_len(nrow(unique_population))) {
     evaluation <- featureManyProblem(x=unique_population[j,],
-                                     X_train=X_train,
-                                     X_test=X_val,
+                                     X_train=X_train_subset,
+                                     X_test=X_val_subset,
                                      y_train=y_train,
                                      y_test=y_val,
-                                     mutual_info = features.mutual_info,
+                                     mutual_info = features.mutual_info.subset,
                                      estimator=get(model))
-    writeLines(as.character(evaluation), k, sep = ",")
+    # writeLines(as.character(evaluation), k, sep = ",")
+    writeLines(paste(evaluation, collapse = ","), k)
     writeLines("\n", k)
   }
 
@@ -350,3 +360,28 @@ featureManyProblem(x = rep(1, length(features.mutual_info)),
                             y_test = y_val,
                             mutual_info = features.mutual_info,
                             estimator = get(model))
+
+
+
+
+
+setwd('C:/Users/Maria/Downloads/Tesis/Simulaciones/Codigo/Feature Selection/R')
+setwd('C:/Users/Maria/Documents/Python Scripts/resultados 90 iteraciones/toniot')
+setwd('C:/Users/Maria/Documents/Python Scripts/ToN_IoT/Codificados y Normalizados')
+setwd('C:/Users/Maria/Documents/R/maofs/R')
+setwd('C:/Users/Maria/Documents/R/maofs/Python/methods')
+setwd('C:/Users/Maria/Documents/R/rmoo/R')
+setwd('C:/Users/Maria/Documents/R/Notebooks/Result Smote')
+
+
+
+
+features_pd <- r_to_py(dataset_train %>% select(-label, -type))
+label_pd <- r_to_py(dataset_train$label)
+
+balanced <- balance_smote(features_pd, label_pd, as.integer(42))
+
+balanced_features <- py_to_r(balanced[[1]])
+balanced_labels <- py_to_r(balanced[[2]])
+
+dataset_train <- cbind(balanced_features, label = balanced_labels)

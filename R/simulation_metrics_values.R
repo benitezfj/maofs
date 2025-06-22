@@ -1,3 +1,4 @@
+setwd('C:/Users/Maria/Documents/R/Notebooks/Result Smote')
 #  Normaliza el fitness value y recalcula las metricas HV, IGD, GD y EPS de todos las simulaciones
 # Los datos generados aquí se visualizan en las tablas II, III, IV
 
@@ -107,9 +108,6 @@ for (dataset in dataset_names) {
 }
 
 
-
-
-
 # Este codigo evalua directamente los valores de Mean, SD y Best para cada simulación
 calculate_only_metrics <- function(dataset_names, algorithms, models, reference_dirs, reference_point){
   pattern <- "%s_fitness_%s_maop_%s.csv"
@@ -198,6 +196,62 @@ calculate_only_metrics <- function(dataset_names, algorithms, models, reference_
 
 }
 
+# -----------------------------------------NUEVO 25/05/2025-------------------------------
+calculate_only_metrics <- function(dataset_names, algorithms, models, reference_dirs, reference_point) {
+  pattern <- "%s_fitness_%s_%s.csv"
+
+  for (dataset in dataset_names) {
+    for (algorithm in algorithms) {
+      for (model in models) {
+        filename <- sprintf(pattern, dataset, algorithm, model)
+        content <- readLines(filename)
+
+        # Separar en bloques de ejecuciones usando líneas vacías
+        sections <- split(content[nzchar(trimws(content)) | duplicated(content)],
+                          cumsum(trimws(content) == ""))
+
+        # Convertir cada sección en matriz numérica
+        parsed_sections <- lapply(sections, function(lines) {
+          do.call(rbind, lapply(lines, function(line) as.numeric(strsplit(line, ",")[[1]])))
+        })
+
+        hv_values <- numeric()
+        gd_values <- numeric()
+        igd_plus_values <- numeric()
+
+        for (mat in parsed_sections) {
+          if (!is.matrix(mat)) next
+          mat_t <- t(mat)
+          gd <- ecr::computeGenerationalDistance(mat_t, t(reference_dirs))
+          igd <- eaf::igd_plus(data = mat, reference = reference_dirs)
+          hv <- if (nrow(mat) == 1) {
+            calculate_distance(data_point = mat, ref_point = reference_point)
+          } else {
+            emoa::dominated_hypervolume(points = mat_t, ref = reference_point)
+          }
+
+          gd_values <- c(gd_values, gd)
+          igd_plus_values <- c(igd_plus_values, igd)
+          hv_values <- c(hv_values, hv)
+        }
+
+        metrics <- data.frame(HV = hv_values, GD = gd_values, IGD = igd_plus_values)
+
+        metrics_best <- data.frame(HV = max(metrics$HV),
+                                   GD = min(metrics$GD),
+                                   IGD = min(metrics$IGD),
+                                   row.names = "Best")
+
+        metrics_mean <- data.frame(t(colMeans(metrics)), row.names = "Mean")
+        metrics_sd <- data.frame(t(apply(metrics, 2, sd)), row.names = "SD")
+
+        results <- rbind(metrics_best, metrics_mean, metrics_sd)
+        write.csv(results, sprintf("%s_metrics_%s_%s.csv", dataset, algorithm, model), row.names = FALSE)
+      }
+    }
+  }
+}
+
 
 reference_point <- c(0.5,1.5,0.5,0.5)
 reference_dirs <- reference_dirs_norm <- generate_reference_points(4,7)
@@ -208,3 +262,4 @@ algorithms <- c("rvea", "moead","nsgaiii", "nsgaii")
 models <- c("knn","gnb")
 
 calculate_only_metrics(dataset_names, algorithms, models, reference_dirs, reference_point)
+
